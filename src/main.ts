@@ -8,6 +8,7 @@ import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { open } from '@tauri-apps/plugin-dialog'
 import { render } from './render'
+import { openPrintSetup, closePrintSetup } from './print/preview'
 import {
   applyTheme,
   getStoredPreference,
@@ -98,6 +99,7 @@ async function loadFile(path: string, preserveScroll = false): Promise<void> {
   try {
     const markdown = await invoke<string>('read_markdown', { path })
     currentMarkdown = markdown
+    closePrintSetup()
     contentEl.innerHTML = render(markdown)
     await runMermaid()
     currentPath = path
@@ -147,6 +149,7 @@ listen<string>('file-changed', (event) => {
   clearTimeout(reloadTimer)
   reloadTimer = setTimeout(() => loadFile(event.payload, true), 80)
 })
+listen('menu-print', () => openPrintSetup(contentEl))
 
 async function init(): Promise<void> {
   refreshTheme()

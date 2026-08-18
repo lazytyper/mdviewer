@@ -62,31 +62,31 @@ html, body {
   line-height: 1.6;
 }
 
-#content h1, #content h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
-#content a { color: var(--accent); }
-#content code {
+.md-body h1, .md-body h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.md-body a { color: var(--accent); }
+.md-body code {
   font-family: var(--font-mono);
   background: var(--code-bg);
   padding: 0.15em 0.35em;
   border-radius: 4px;
   font-size: 0.9em;
 }
-#content pre {
+.md-body pre {
   background: var(--code-bg);
   padding: 1rem;
   border-radius: 8px;
   overflow-x: auto;
 }
-#content pre code { background: none; padding: 0; }
-#content table { border-collapse: collapse; }
-#content th, #content td { border: 1px solid var(--border); padding: 0.4rem 0.8rem; }
-#content blockquote {
+.md-body pre code { background: none; padding: 0; }
+.md-body table { border-collapse: collapse; }
+.md-body th, .md-body td { border: 1px solid var(--border); padding: 0.4rem 0.8rem; }
+.md-body blockquote {
   margin: 0;
   padding-left: 1rem;
   border-left: 4px solid var(--border);
   color: var(--muted);
 }
-#content img { max-width: 100%; }
+.md-body img { max-width: 100%; }
 
 .error-banner {
   background: #ffdce0;
@@ -101,3 +101,74 @@ html, body {
   color: #ffa198;
   border-color: #6e2b30;
 }
+
+/* --- Print setup overlay --- */
+#print-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+#print-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 1rem;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+}
+#print-toolbar label { font-size: 0.85rem; color: var(--muted); display: inline-flex; gap: 0.35rem; align-items: center; }
+#print-toolbar select, #print-toolbar input { font: inherit; }
+#print-toolbar #pf-info { margin-left: auto; color: var(--muted); font-size: 0.85rem; }
+#print-toolbar button {
+  font: inherit; padding: 0.35rem 0.8rem; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg); color: var(--fg); cursor: pointer;
+}
+#print-toolbar #pf-print { border-color: var(--accent); color: var(--accent); }
+#print-toolbar button:disabled { opacity: 0.5; cursor: default; }
+#print-pages {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+  background: #8884;
+}
+.print-column {
+  position: relative;
+  background: #fff;
+  color: #111;
+  box-shadow: 0 0 8px #0006;
+}
+:root[data-theme="dark"] .print-column { background: #fff; color: #111; }
+.print-gap { background: repeating-linear-gradient(45deg, #0000 0 8px, #00000010 8px 16px); }
+.print-break {
+  position: relative;
+  height: 0;
+}
+.print-break-bar {
+  position: absolute;
+  left: -6px; right: -6px;
+  height: 10px;
+  transform: translateY(-5px);
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+}
+.print-break-bar::before {
+  content: ""; flex: 1; height: 2px;
+  background: var(--accent);
+}
+.print-break-bar .print-break-remove {
+  cursor: pointer; color: #fff; background: var(--accent);
+  border-radius: 4px; font-size: 0.7rem; line-height: 1; padding: 2px 4px; margin-left: 4px;
+}
+.print-addbreak {
+  position: absolute; left: 0; right: 0; height: 12px; transform: translateY(-6px);
+  cursor: pointer; opacity: 0; display: flex; align-items: center; justify-content: center;
+}
+.print-addbreak::before { content: "+ Umbruch"; font-size: 0.7rem; color: var(--accent); }
+.print-addbreak:hover { opacity: 1; }
