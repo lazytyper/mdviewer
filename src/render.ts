@@ -13,7 +13,6 @@ import DOMPurify from 'dompurify'
 const md = new MarkdownIt({
   html: true,
   linkify: true,
-  typographer: true,
   highlight(code, lang): string {
     if (lang === 'mermaid') {
       return `<pre class="mermaid">${md.utils.escapeHtml(code)}</pre>`
