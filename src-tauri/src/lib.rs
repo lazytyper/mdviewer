@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 use notify::{RecursiveMode, Watcher};
 use tauri::{AppHandle, Emitter, Manager};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 
 /// The path passed at launch (CLI arg or OS file association), if any.
 pub struct StartupPath(pub Mutex<Option<String>>);
@@ -82,6 +83,20 @@ pub fn run() {
         .setup(move |app| {
             app.manage(StartupPath(Mutex::new(startup.clone())));
             app.manage(WatcherState(Mutex::new(None)));
+            let print_item = MenuItemBuilder::new("Drucken…")
+                .id("print")
+                .accelerator("CmdOrCtrl+P")
+                .build(app)?;
+            let file_menu = SubmenuBuilder::new(app, "Datei")
+                .item(&print_item)
+                .build()?;
+            let menu = MenuBuilder::new(app).item(&file_menu).build()?;
+            app.set_menu(menu)?;
+            app.on_menu_event(move |app, event| {
+                if event.id() == "print" {
+                    let _ = app.emit("menu-print", ());
+                }
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
