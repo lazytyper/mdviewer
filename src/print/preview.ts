@@ -1,4 +1,6 @@
-import { type PrintSettings, type PaperSize, type Orientation, type MarginPreset } from './format'
+import { pageMetrics, type PrintSettings, type PaperSize, type Orientation, type MarginPreset } from './format'
+import { paginate } from './paginate'
+import { buildPrintCss } from './print-css'
 
 const STORAGE_KEY = 'mdviewer-print'
 
@@ -125,18 +127,146 @@ export function openPrintSetup(contentEl: HTMLElement): void {
   rerender()
 }
 
-// Stub implementations — REPLACED with real ones in Task 6. Real (hoisted)
-// function declarations so `openPrintSetup` above can call them.
+/**
+ * Render the paginated preview into pagesEl.
+ * Builds a white content column at the page's printable width, measures each
+ * block, computes page breaks, and overlays a draggable bar at every break plus
+ * an "add break" affordance between blocks.
+ */
 function renderPreview(
   pagesEl: HTMLElement,
-  _blocks: HTMLElement[],
-  _settings: PrintSettings,
-  _forcedBreaks: Set<number>,
-  _infoEl: HTMLElement,
+  blocks: HTMLElement[],
+  settings: PrintSettings,
+  forcedBreaks: Set<number>,
+  infoEl: HTMLElement,
 ): void {
   pagesEl.textContent = ''
+  if (blocks.length === 0) return
+
+  const metrics = pageMetrics(settings)
+
+  // Build the content column at printable width, with scaled typography.
+  const column = document.createElement('div')
+  column.className = 'md-body print-column'
+  column.style.width = `${metrics.contentWidthPx}px`
+  column.style.padding = `${metrics.marginPx}px`
+  column.style.fontSize = `${settings.scale}em`
+  const cloned = blocks.map((b) => b.cloneNode(true) as HTMLElement)
+  cloned.forEach((c) => column.appendChild(c))
+  pagesEl.appendChild(column)
+
+  // Measure each block's height in this laid-out column.
+  const heights = cloned.map((c) => c.offsetHeight)
+  const breaks = paginate(heights, metrics.contentHeightPx, forcedBreaks)
+
+  infoEl.textContent = `${breaks.length + 1} Seite(n) · ${settings.size} ${
+    settings.orientation === 'landscape' ? 'quer' : 'hoch'
+  }`
+
+  // Cumulative top offset of each block within the padded column.
+  const tops = cloned.map((c) => c.offsetTop)
+
+  // Draw a draggable bar before every break block.
+  for (const idx of breaks) {
+    const bar = makeBreakBar(idx, forcedBreaks.has(idx))
+    bar.style.top = `${tops[idx]}px`
+    column.appendChild(bar)
+  }
+
+  // Between every pair of adjacent blocks that is NOT already a break,
+  // offer an "add manual break" affordance.
+  for (let i = 1; i < cloned.length; i++) {
+    if (breaks.includes(i)) continue
+    const add = document.createElement('div')
+    add.className = 'print-addbreak'
+    add.style.top = `${tops[i]}px`
+    add.title = 'Manuellen Umbruch hier einfügen'
+    add.addEventListener('click', () => {
+      forcedBreaks.add(i)
+      renderPreview(pagesEl, blocks, settings, forcedBreaks, infoEl)
+    })
+    column.appendChild(add)
+  }
+
+  // --- helpers (closure over column/tops/blocks/settings) ---
+  function makeBreakBar(index: number, removable: boolean): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'print-break'
+    wrap.style.position = 'absolute'
+    wrap.style.left = '0'
+    wrap.style.right = '0'
+
+    const bar = document.createElement('div')
+    bar.className = 'print-break-bar'
+    wrap.appendChild(bar)
+
+    if (removable) {
+      const rm = document.createElement('span')
+      rm.className = 'print-break-remove'
+      rm.textContent = '✕'
+      rm.title = 'Umbruch entfernen'
+      rm.addEventListener('click', (e) => {
+        e.stopPropagation()
+        forcedBreaks.delete(index)
+        renderPreview(pagesEl, blocks, settings, forcedBreaks, infoEl)
+      })
+      bar.appendChild(rm)
+    }
+
+    // Drag to snap the break to the nearest earlier block boundary.
+    bar.addEventListener('pointerdown', (e) => {
+      e.preventDefault()
+      bar.setPointerCapture(e.pointerId)
+      const columnTop = column.getBoundingClientRect().top
+      const onMove = (ev: PointerEvent) => {
+        const y = ev.clientY - columnTop
+        const target = nearestBoundaryAtOrAbove(tops, y, index)
+        wrap.style.top = `${tops[target] ?? tops[index]}px`
+        wrap.dataset.target = String(target)
+      }
+      const onUp = () => {
+        bar.releasePointerCapture(e.pointerId)
+        bar.removeEventListener('pointermove', onMove)
+        bar.removeEventListener('pointerup', onUp)
+        const target = Number(wrap.dataset.target ?? index)
+        if (target !== index && target > 0) {
+          forcedBreaks.delete(index)
+          forcedBreaks.add(target)
+          renderPreview(pagesEl, blocks, settings, forcedBreaks, infoEl)
+        }
+      }
+      bar.addEventListener('pointermove', onMove)
+      bar.addEventListener('pointerup', onUp)
+    })
+
+    return wrap
+  }
 }
 
-function doPrint(_settings: PrintSettings, _forcedBreaks: Set<number>): void {
-  /* replaced in Task 6 */
+/**
+ * Index of the block whose top offset is the closest boundary at or above `y`,
+ * never past the current auto break `maxIndex` (breaks may only move earlier).
+ */
+function nearestBoundaryAtOrAbove(tops: number[], y: number, maxIndex: number): number {
+  let best = 1
+  for (let i = 1; i <= maxIndex && i < tops.length; i++) {
+    if (tops[i] <= y) best = i
+    else break
+  }
+  return best
+}
+
+/** Inject print CSS, open the OS print dialog, then clean up. */
+function doPrint(settings: PrintSettings, forcedBreaks: Set<number>): void {
+  document.getElementById('print-style')?.remove()
+  const style = document.createElement('style')
+  style.id = 'print-style'
+  style.textContent = buildPrintCss(settings, forcedBreaks)
+  document.head.appendChild(style)
+  const cleanup = () => {
+    document.getElementById('print-style')?.remove()
+    window.removeEventListener('afterprint', cleanup)
+  }
+  window.addEventListener('afterprint', cleanup)
+  window.print()
 }
