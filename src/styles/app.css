@@ -1,0 +1,103 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #656d76;
+  --border: #d0d7de;
+  --accent: #0969da;
+  --code-bg: #f6f8fa;
+  --toolbar-bg: #f6f8fa;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d1117;
+  --fg: #e6edf3;
+  --muted: #8b949e;
+  --border: #30363d;
+  --accent: #4493f8;
+  --code-bg: #161b22;
+  --toolbar-bg: #161b22;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+}
+
+#toolbar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+#toolbar button {
+  font: inherit;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+#toolbar button:hover { border-color: var(--accent); }
+
+#filename { color: var(--muted); font-size: 0.9rem; margin-right: auto; }
+
+#content {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 6rem;
+  line-height: 1.6;
+}
+
+#content h1, #content h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+#content a { color: var(--accent); }
+#content code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+#content pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+#content pre code { background: none; padding: 0; }
+#content table { border-collapse: collapse; }
+#content th, #content td { border: 1px solid var(--border); padding: 0.4rem 0.8rem; }
+#content blockquote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 4px solid var(--border);
+  color: var(--muted);
+}
+#content img { max-width: 100%; }
+
+.error-banner {
+  background: #ffdce0;
+  color: #82071e;
+  border: 1px solid #ff818266;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+:root[data-theme="dark"] .error-banner {
+  background: #3d1417;
+  color: #ffa198;
+  border-color: #6e2b30;
+}
