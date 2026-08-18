@@ -1,12 +1,10 @@
 fn read_markdown_impl(path: &str) -> Result<String, String> {
-    let p = std::path::Path::new(path);
-    if !p.exists() {
-        return Err(format!("Datei nicht gefunden: {path}"));
-    }
-    if !p.is_file() {
-        return Err(format!("Kein regulärer Dateipfad: {path}"));
-    }
-    std::fs::read_to_string(p).map_err(|e| format!("Konnte Datei nicht lesen: {e}"))
+    use std::io::ErrorKind;
+    std::fs::read_to_string(path).map_err(|e| match e.kind() {
+        ErrorKind::NotFound => format!("Datei nicht gefunden: {path}"),
+        ErrorKind::IsADirectory => format!("Kein regulärer Dateipfad: {path}"),
+        _ => format!("Konnte Datei nicht lesen: {e}"),
+    })
 }
 
 #[tauri::command]
@@ -49,5 +47,7 @@ mod tests {
         let dir = std::env::temp_dir();
         let out = read_markdown_impl(dir.to_str().unwrap());
         assert!(out.is_err());
+        let err = out.unwrap_err();
+        assert!(err.contains("Kein regulärer Dateipfad"), "got: {err}");
     }
 }
