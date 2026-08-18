@@ -99,4 +99,5 @@ html, body {
 :root[data-theme="dark"] .error-banner {
   background: #3d1417;
   color: #ffa198;
+  border-color: #6e2b30;
 }
