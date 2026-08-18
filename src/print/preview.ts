@@ -165,6 +165,7 @@ function renderPreview(
 
   // Cumulative top offset of each block within the padded column.
   const tops = cloned.map((c) => c.offsetTop)
+  const breakSet = new Set(breaks)
 
   // Draw a draggable bar before every break block.
   for (const idx of breaks) {
@@ -176,7 +177,7 @@ function renderPreview(
   // Between every pair of adjacent blocks that is NOT already a break,
   // offer an "add manual break" affordance.
   for (let i = 1; i < cloned.length; i++) {
-    if (breaks.includes(i)) continue
+    if (breakSet.has(i)) continue
     const add = document.createElement('div')
     add.className = 'print-addbreak'
     add.style.top = `${tops[i]}px`
@@ -228,6 +229,7 @@ function renderPreview(
         bar.releasePointerCapture(e.pointerId)
         bar.removeEventListener('pointermove', onMove)
         bar.removeEventListener('pointerup', onUp)
+        bar.removeEventListener('pointercancel', onUp)
         const target = Number(wrap.dataset.target ?? index)
         if (target !== index && target > 0) {
           forcedBreaks.delete(index)
@@ -237,6 +239,7 @@ function renderPreview(
       }
       bar.addEventListener('pointermove', onMove)
       bar.addEventListener('pointerup', onUp)
+      bar.addEventListener('pointercancel', onUp)
     })
 
     return wrap
