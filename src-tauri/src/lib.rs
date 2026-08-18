@@ -1,5 +1,6 @@
 use std::sync::Mutex;
-use tauri::Manager;
+use notify::{RecursiveMode, Watcher};
+use tauri::{AppHandle, Emitter, Manager};
 
 /// The path passed at launch (CLI arg or OS file association), if any.
 pub struct StartupPath(pub Mutex<Option<String>>);
@@ -31,6 +32,47 @@ fn read_markdown(path: String) -> Result<String, String> {
     read_markdown_impl(&path)
 }
 
+/// Holds the active watcher so it is dropped/replaced when a new file opens.
+pub struct WatcherState(pub Mutex<Option<notify::RecommendedWatcher>>);
+
+#[tauri::command]
+fn start_watching(
+    path: String,
+    app: AppHandle,
+    state: tauri::State<WatcherState>,
+) -> Result<(), String> {
+    let target = std::path::PathBuf::from(&path);
+    let parent = target
+        .parent()
+        .map(|p| p.to_path_buf())
+        .ok_or_else(|| "Kein übergeordnetes Verzeichnis".to_string())?;
+
+    let app_handle = app.clone();
+    let target_for_cb = target.clone();
+
+    let mut watcher = notify::recommended_watcher(
+        move |res: Result<notify::Event, notify::Error>| {
+            if let Ok(event) = res {
+                let relevant = matches!(
+                    event.kind,
+                    notify::EventKind::Modify(_) | notify::EventKind::Create(_)
+                );
+                if relevant && event.paths.iter().any(|p| p == &target_for_cb) {
+                    let _ = app_handle.emit("file-changed", target_for_cb.to_string_lossy().to_string());
+                }
+            }
+        },
+    )
+    .map_err(|e| e.to_string())?;
+
+    watcher
+        .watch(&parent, RecursiveMode::NonRecursive)
+        .map_err(|e| e.to_string())?;
+
+    *state.0.lock().unwrap() = Some(watcher);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let startup = first_markdown_arg(&std::env::args().collect::<Vec<_>>());
@@ -39,11 +81,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
             app.manage(StartupPath(Mutex::new(startup.clone())));
+            app.manage(WatcherState(Mutex::new(None)));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             read_markdown,
-            get_startup_path
+            get_startup_path,
+            start_watching
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

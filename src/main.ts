@@ -4,6 +4,7 @@ import hljsDarkUrl from 'highlight.js/styles/github-dark.css?url'
 import 'katex/dist/katex.min.css'
 import mermaid from 'mermaid'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebview } from '@tauri-apps/api/webview'
 import { open } from '@tauri-apps/plugin-dialog'
 import { render } from './render'
@@ -136,6 +137,12 @@ window
 getCurrentWebview().onDragDropEvent((event) => {
   if (event.payload.type === 'drop' && event.payload.paths.length > 0) {
     loadFile(event.payload.paths[0])
+  }
+})
+
+listen<string>('file-changed', (event) => {
+  if (event.payload === currentPath) {
+    loadFile(event.payload, true)
   }
 })
 
