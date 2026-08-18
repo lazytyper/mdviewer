@@ -140,10 +140,12 @@ getCurrentWebview().onDragDropEvent((event) => {
   }
 })
 
+// Debounce live-reload: editors often emit several write events per save.
+let reloadTimer: ReturnType<typeof setTimeout> | undefined
 listen<string>('file-changed', (event) => {
-  if (event.payload === currentPath) {
-    loadFile(event.payload, true)
-  }
+  if (event.payload !== currentPath) return
+  clearTimeout(reloadTimer)
+  reloadTimer = setTimeout(() => loadFile(event.payload, true), 80)
 })
 
 async function init(): Promise<void> {
