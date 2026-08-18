@@ -145,10 +145,13 @@ function renderPreview(
 
   const metrics = pageMetrics(settings)
 
-  // Build the content column at printable width, with scaled typography.
+  // Build the page column at full page width with the margin as padding. With
+  // the global box-sizing:border-box, the inner content box then measures
+  // exactly contentWidthPx — matching what window.print() lays out — while the
+  // padding visualises the page margins.
   const column = document.createElement('div')
   column.className = 'md-body print-column'
-  column.style.width = `${metrics.contentWidthPx}px`
+  column.style.width = `${metrics.pageWidthPx}px`
   column.style.padding = `${metrics.marginPx}px`
   column.style.fontSize = `${settings.scale}em`
   const cloned = blocks.map((b) => b.cloneNode(true) as HTMLElement)

@@ -144,7 +144,6 @@ html, body {
   box-shadow: 0 0 8px #0006;
 }
 :root[data-theme="dark"] .print-column { background: #fff; color: #111; }
-.print-gap { background: repeating-linear-gradient(45deg, #0000 0 8px, #00000010 8px 16px); }
 .print-break {
   position: relative;
   height: 0;
